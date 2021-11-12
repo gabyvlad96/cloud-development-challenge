@@ -20,7 +20,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('dev'));
 app.use(express.static('uploads'));
 
-const BUCKET_NAME = 'BUCKET_NAME';
+const BUCKET_NAME = 'myservice-gabi235087594-mybucket';
 
 async function uploadToS3 (file) {
   var s3 = new AWS.S3({apiVersion: '2006-03-01'});
@@ -32,19 +32,12 @@ async function uploadToS3 (file) {
   };
 
   try {
-    const res = await s3.upload (uploadParams, function (err, data) {
-      if (err) {
-        console.log("Error", err);
-      } if (data) {
-        console.log("Upload Success", data.Location);
-      }
-    });
-    console.log(res)
+    const stored = await s3.upload(uploadParams).promise()
+    return stored;
   } catch (err) {
     console.log(err)
+    return err;
   }
-
-  return res;
 }
 
 app.post('/upload', async (req, res) => {
@@ -57,23 +50,26 @@ app.post('/upload', async (req, res) => {
       } else {
           const data = []; 
           const files = Array.isArray(req.files.files) ? req.files.files : [req.files.files];
+          const fullResponse = []
 
-          console.log(files)
-          files.forEach(async (file) => {
-            uploadToS3(file);
+          files.forEach(async (file) => {            
+            const response = await uploadToS3(file);
+            fullResponse.push(response);
             
             data.push({
               name: file.name,
               mimetype: file.mimetype,
               size: file.size
             });
+            
+            if (fullResponse.length === files.length) {
+              res.send({
+                message: fullResponse,
+                status: true,
+                data: data
+              });
+            }
           })
-
-          res.send({
-            message: "File Uploaded",
-              status: true,
-              data: data
-          });
       }
   } catch (err) {
       res.status(500).send(err.message);
