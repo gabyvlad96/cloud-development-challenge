@@ -5,7 +5,8 @@ service: node-server
 frameworkVersion: '2'
 
 custom:
-  env: ${file(./variables.yml)}
+  env_var:
+    s3_bucket: myservice-gabi235087594-mybucket
 
 provider:
   name: aws
@@ -24,13 +25,50 @@ functions:
       - http:
           path: /{proxy+}
           method: ANY
+    role: apiRole
 
 resources:
   Resources:
     myBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: BUCKET_NAME
-
-
-
+        BucketName: ${self:custom.env_var.s3_bucket}
+    apiRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: apiRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: lambdaPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group:/aws/lambda/*:*:*'
+                - Effect: "Allow"
+                  Action:
+                    - "s3:PutObject"
+                  Resource:
+                    Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - ${self:custom.env_var.s3_bucket}
+                        - "/*"
