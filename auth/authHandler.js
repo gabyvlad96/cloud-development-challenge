@@ -1,5 +1,3 @@
-const API_IDENTIFIER = "5q2f6fyes7";
-// const ARN = "242346692193";
 
 exports.handler = async (event) => {
   const token = event.authorizationToken;
@@ -18,10 +16,10 @@ exports.handler = async (event) => {
           "Action": "execute-api:Invoke",
           "Effect": effect,
           "Resource": event.methodArn,
-        }
-      ]
+        },
+      ],
     },
-  }
+  };
 
   return policy;
 };
