@@ -6,10 +6,10 @@ frameworkVersion: '2'
 
 custom:
   env_var:
-    s3_bucket: BUCKET_NAME
-    ddb_table_name: TABLE_NAME
+    s3_bucket: myservice-gabi235087594-mybucket
+    ddb_table_name: files_data_table
     region: us-east-1
-    arn: ARN
+    arn: '242346692193'
 
 provider:
   name: aws
@@ -50,9 +50,11 @@ functions:
       - http:
           path: /
           method: ANY
+          authorizer: authorizerFunc
       - http:
           path: /{proxy+}
           method: ANY
+          authorizer: authorizerFunc
   trigger:
     handler: trigger/handler.handler
     events:
@@ -60,6 +62,8 @@ functions:
           bucket: ${self:custom.env_var.s3_bucket}
           event: s3:ObjectCreated:*
           existing: true
+  authorizerFunc:
+    handler: auth/authHandler.handler
 
 resources:
   Resources:
