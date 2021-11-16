@@ -9,7 +9,7 @@ custom:
     s3_bucket: BUCKET_NAME
     ddb_table_name: files_data_table
     region: us-east-1
-    arn: 'ARN'
+    id: 'ACCOUNT_ID'
 
 provider:
   name: aws
@@ -39,7 +39,7 @@ provider:
               - ''
               - - 'arn:aws:dynamodb:'
                 - ${self:custom.env_var.region}
-                - ':${self:custom.env_var.arn}:'
+                - ':${self:custom.env_var.id}:'
                 - 'table/'
                 - ${self:custom.env_var.ddb_table_name}
 
