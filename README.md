@@ -7,6 +7,10 @@ For authorization, you need to set the following header when making the request
 ```
 {"Authorization": "allowTest"}
 ```
+To send files, you use the `files` key. Example:
+```
+{"files": Filename.txt}
+```
 
 To upload the application to AWS you need to have **Serverless** configured.  
 The next step is to modify the `env_var` inside `serverless.yml` to add a name for the S3 bucket you want to store the files in and to add your own AWS ARN. Also, you need to add the name of the bucket in `api/apiHandler.js`  
