@@ -26,19 +26,19 @@ async function writeToDb(key, contentType, ContentLength) {
 }
 
 exports.handler = async (event) => {
-  const bucket = event.Records[0].s3.bucket.name;
-  const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
-  const params = {
-    Bucket: bucket,
-    Key: key,
-  };
-
   try {
+    const body = JSON.parse(event.Records[0].body);
+    const bucket = body.Records[0].s3.bucket.name;
+    const key = decodeURIComponent(body.Records[0].s3.object.key.replace(/\+/g, " "));
+    const params = {
+      Bucket: bucket,
+      Key: key,
+    };
     const {ContentType, ContentLength} = await s3.getObject(params).promise();
     const result = await writeToDb(key, ContentType, ContentLength);
     return result;
   } catch (err) {
-    console.log(err);
-    throw new Error(message);
+    console.error(err);
+    reject(Error(err));
   }
 };

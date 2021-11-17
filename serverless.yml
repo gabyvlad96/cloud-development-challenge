@@ -6,7 +6,7 @@ frameworkVersion: '2'
 
 custom:
   env_var:
-    s3_bucket: BUCKET_NAME
+    s3_bucket: myservice-gabi235087594-mybucket
     ddb_table_name: files_data_table
     region: us-east-1
     id: 'ACCOUNT_ID'
@@ -58,19 +58,39 @@ functions:
   trigger:
     handler: trigger/triggerHandler.handler
     events:
-      - s3:
-          bucket: ${self:custom.env_var.s3_bucket}
-          event: s3:ObjectCreated:*
-          existing: true
+      - sqs:
+          arn:
+            Fn::Join:
+              - ':'
+              - - 'arn:aws:sqs'
+                - ${self:custom.env_var.region}
+                - ${self:custom.env_var.id}
+                - 'EventQueue'
   authorizerFunc:
     handler: auth/authHandler.handler
 
 resources:
   Resources:
+    EventQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "EventQueue"
     myBucket:
       Type: AWS::S3::Bucket
+      DependsOn:
+        - QueuePolicy
       Properties:
         BucketName: ${self:custom.env_var.s3_bucket}
+        NotificationConfiguration:
+          QueueConfigurations:
+            - Event: 's3:ObjectCreated:*'
+              Queue:
+                Fn::Join:
+                  - ':'
+                  - - 'arn:aws:sqs'
+                    - ${self:custom.env_var.region}
+                    - ${self:custom.env_var.id}
+                    - 'EventQueue'
     filesDataTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -84,3 +104,30 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+    QueuePolicy:
+      Type: 'AWS::SQS::QueuePolicy'
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: "s3.amazonaws.com"
+              Action:
+                - 'SQS:SendMessage'
+              Resource:
+                Fn::Join:
+                  - ':'
+                  - - 'arn:aws:sqs'
+                    - ${self:custom.env_var.region}
+                    - ${self:custom.env_var.id}
+                    - 'EventQueue'
+              Condition:
+                ArnLike:
+                  aws:SourceArn:
+                    Fn::Join:
+                      - ''
+                      - - 'arn:aws:s3:::'
+                        - ${self:custom.env_var.s3_bucket}
+        Queues:
+          - EventQueue
